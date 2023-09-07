@@ -1,0 +1,12 @@
+logging_level: "INFO"
+
+misp_servers:
+  - domain: "https://example-misp-instance.com"
+    api_key: "API_KEY"
+    parameter_domains: ""
+    parameter_ips: ""
+
+correlation:
+  output_dir: ./output_dir/
+  malicious_domains_file: ./misp_domains.txt
+  malicious_ips_file: ./misp_ips.txt
