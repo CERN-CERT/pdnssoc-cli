@@ -42,4 +42,4 @@ jobs:
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://pypi.org/
+          repository-url:  https://upload.pypi.org/legacy/
