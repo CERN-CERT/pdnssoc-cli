@@ -45,7 +45,7 @@ Usage
 
     .. code-block::
 
-        Usage: pdnssoc_cli [OPTIONS] COMMAND [ARGS]...
+        Usage: pdnssoc-cli [OPTIONS] COMMAND [ARGS]...
 
         Options:
             -c, --config FILE  Read option defaults from the specified yaml file

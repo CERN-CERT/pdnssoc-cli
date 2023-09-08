@@ -1,9 +1,9 @@
-name: Release on testpypi
+name: Release on pypi
 
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+.dev[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 defaults:
   run:
@@ -11,11 +11,11 @@ defaults:
 
 jobs:
   package-build:
-    name: Release to testpypi
+    name: Release to pypi
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
-      url: https://testpypi.org/p/pdnssoc-cli
+      name: pypi
+      url: https://pypi.org/p/pdnssoc-cli
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
@@ -39,7 +39,7 @@ jobs:
       - name: Build package
         run: pipenv run tox -e clean,build
 
-      - name: Publish package distributions to TestPyPI
+      - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
+          repository-url: https://pypi.org/
