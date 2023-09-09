@@ -34,3 +34,7 @@ def read_file(file_path):
         logging.warning("File {} is not in valid format".format(file_path))
 
     return file_iter, is_minified
+
+def write_generic(file_name):
+    f = open(file_name, mode='w')
+    return f

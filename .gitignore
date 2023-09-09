@@ -54,3 +54,6 @@ MANIFEST
 .python-version
 
 .pypirc
+
+config.yml
+tests/*.txt
