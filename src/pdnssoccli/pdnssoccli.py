@@ -153,8 +153,6 @@ async def correlate(ctx,
 
     # Set up domain and ip blacklists
     domain_attributes = []
-
-    print(correlation_config)
     if 'malicious_domains_file' in correlation_config and correlation_config['malicious_domains_file']:
         domains_iter, _ = pdnssoc_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
         for domain in domains_iter:
@@ -169,7 +167,6 @@ async def correlate(ctx,
 
 
     ip_attributes = []
-
     if 'malicious_ips_file' in correlation_config and correlation_config['malicious_ips_file']:
         ips_iter, _ = pdnssoc_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
         for attribute in ips_iter:
