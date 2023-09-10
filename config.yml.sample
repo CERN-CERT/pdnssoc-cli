@@ -10,3 +10,4 @@ correlation:
   output_dir: ./output_dir/
   malicious_domains_file: ./misp_domains.txt
   malicious_ips_file: ./misp_ips.txt
+  last_correlation_pointer_file: ./correlation.last

@@ -57,3 +57,6 @@ MANIFEST
 
 config.yml
 tests/*.txt
+tests/test_in
+tests/test_out
+tests/correlation.last

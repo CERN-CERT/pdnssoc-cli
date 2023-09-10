@@ -30,6 +30,8 @@ def read_file(file_path):
         is_minified = True
     elif file_path.suffix == ".txt":
         file_iter = read_generic(file_path.absolute())
+    elif file_path.suffix == ".last":
+        file_iter = read_generic(file_path.absolute())
     else:
         logging.warning("File {} is not in valid format".format(file_path))
 

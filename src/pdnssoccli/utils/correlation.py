@@ -31,7 +31,12 @@ def correlate_events(lines, shared_data):
 
 
     for line in lines:
-        match = json.loads(line)
+        try:
+            match = json.loads(line)
+        except json.JSONDecodeError:
+            logger.warning("Ignoring line due to unrecognized format:{}".format(line))
+            continue
+
         match_found = False
 
         if is_minified:
@@ -46,7 +51,7 @@ def correlate_events(lines, shared_data):
             answers = match['dns']['resource-records']['an']
 
         # parse timestamp
-        if start_date <= timestamp <= end_date:
+        if start_date < timestamp <= end_date:
             if correlate_query(query, domain_attributes):
                 logging.debug("Matched {}".format(match))
                 total_matches.append(match)

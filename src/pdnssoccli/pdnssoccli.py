@@ -79,7 +79,7 @@ async def main(ctx,
     'start_date',
     '--start-date',
     type=click.DateTime(formats=["%Y-%m-%dT%H:%M:%S"]),
-    default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    default=None
 )
 @click.option(
     'end_date',
@@ -128,20 +128,39 @@ async def main(ctx,
 async def correlate(ctx,
     **kwargs):
 
+    correlation_config = ctx.obj['CONFIG']['correlation']
+
     # Configure logging
     logging.basicConfig(
         level=ctx.obj['CONFIG']['logging_level']
     )
 
+    print(correlation_config)
+
+    # Determine start date
+    if not kwargs.get('start_date'):
+        if 'last_correlation_pointer_file' in correlation_config:
+            correlation_last , _  = pdnssoc_file_utils.read_file(Path(correlation_config['last_correlation_pointer_file']))
+            for line in correlation_last:
+                timestamp = pdnssoc_time_utils.parse_rfc3339_ns(
+                    line
+                )
+                start_date = timestamp
+                break
+        else:
+            start_date = datetime.now()
+    else:
+        start_date = kwargs.get('start_date')
+    end_date = kwargs.get('end_date')
+
+
     # Parse json file and only keep alerts in range
     logging.info(
         "Parsing alerts from: {} to {}".format(
-            kwargs.get('start_date'),
-            kwargs.get('end_date')
+            start_date,
+            end_date
         )
     )
-
-    correlation_config = ctx.obj['CONFIG']['correlation']
 
     # Set up MISP connections
     misp_connections = []
@@ -198,8 +217,8 @@ async def correlate(ctx,
             if file_iter:
                 matches = pdnssoc_correlation_utils.correlate_file(
                     file_iter,
-                    kwargs.get("start_date"),
-                    kwargs.get("end_date"),
+                    start_date,
+                    end_date,
                     set(domain_attributes),
                     set(ip_attributes),
                     is_minified
@@ -223,8 +242,8 @@ async def correlate(ctx,
                     if file_iter:
                         matches = pdnssoc_correlation_utils.correlate_file(
                             file_iter,
-                            kwargs.get("start_date"),
-                            kwargs.get("end_date"),
+                            start_date,
+                            end_date,
                             set(domain_attributes),
                             set(ip_attributes),
                             is_minified
@@ -247,9 +266,17 @@ async def correlate(ctx,
     # Output to directory
     # Write full matches to matches.json
 
+    to_output = enriched + enriched_minified
+    to_output = sorted(to_output, key=lambda d: d['timestamp'])
+
     with jsonlines.open(Path(correlation_config['output_dir'], "matches.json"), mode='a') as writer:
-        for document in enriched + enriched_minified:
+        for document in to_output:
             writer.write(document)
+
+    # if new correlations, keep last timestamp
+    if to_output:
+        with pdnssoc_file_utils.write_generic(correlation_config['last_correlation_pointer_file']) as fp:
+                fp.write("{}\n".format(to_output[-1]['timestamp']))
 
 
 @main.command(help="Fetch IOCs from intelligence sources")
