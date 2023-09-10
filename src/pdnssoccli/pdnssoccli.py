@@ -275,8 +275,12 @@ async def correlate(ctx,
 
     # if new correlations, keep last timestamp
     if to_output:
-        with pdnssoc_file_utils.write_generic(correlation_config['last_correlation_pointer_file']) as fp:
-                fp.write("{}\n".format(to_output[-1]['timestamp']))
+        last_correlation = to_output[-1]['timestamp']
+    else:
+        last_correlation = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+    with pdnssoc_file_utils.write_generic(correlation_config['last_correlation_pointer_file']) as fp:
+            fp.write("{}\n".format(last_correlation))
 
 
 @main.command(help="Fetch IOCs from intelligence sources")
