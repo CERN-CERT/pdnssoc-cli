@@ -38,5 +38,5 @@ def read_file(file_path):
     return file_iter, is_minified
 
 def write_generic(file_name):
-    f = open(file_name, mode='w')
+    f = open(file_name, mode='w+')
     return f
