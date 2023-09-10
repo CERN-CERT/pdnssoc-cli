@@ -140,13 +140,18 @@ async def correlate(ctx,
     # Determine start date
     if not kwargs.get('start_date'):
         if 'last_correlation_pointer_file' in correlation_config:
-            correlation_last , _  = pdnssoc_file_utils.read_file(Path(correlation_config['last_correlation_pointer_file']))
-            for line in correlation_last:
-                timestamp = pdnssoc_time_utils.parse_rfc3339_ns(
-                    line
-                )
-                start_date = timestamp
-                break
+            last_correlation_path = Path(correlation_config['last_correlation_pointer_file'])
+            if last_correlation_path.is_file():
+                correlation_last , _  = pdnssoc_file_utils.read_file(Path(correlation_config['last_correlation_pointer_file']))
+                for line in correlation_last:
+                    timestamp = pdnssoc_time_utils.parse_rfc3339_ns(
+                        line
+                    )
+                    start_date = timestamp
+                    break
+            else:
+                logger.warning("Last correlation file at {} not existing. Will be recreated".format(correlation_config['last_correlation_pointer_file']))
+                start_date = datetime.now()
         else:
             start_date = datetime.now()
     else:

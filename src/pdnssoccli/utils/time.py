@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 def parse_rfc3339_ns(timestamp):
     # Split the timestamp at the decimal point, if present
-    parts = timestamp.split('.')
+    parts = timestamp.strip().split('.')
 
     # Parse the datetime part as a datetime object
     dt = datetime.fromisoformat(parts[0])
