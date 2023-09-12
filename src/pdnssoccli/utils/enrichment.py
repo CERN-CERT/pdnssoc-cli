@@ -49,7 +49,6 @@ def build_misp_events(misp_response, misp_connection, encountered_events, query)
                     break
 
             encountered_events.add(event.uuid)
-            break
 
     return misp_events, encountered_events
 

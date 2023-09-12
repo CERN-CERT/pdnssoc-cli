@@ -90,8 +90,6 @@ async def correlate(ctx,
         level=ctx.obj['CONFIG']['logging_level']
     )
 
-    print(correlation_config)
-
     # Determine start date
     if not kwargs.get('start_date'):
         if 'last_correlation_pointer_file' in correlation_config:
