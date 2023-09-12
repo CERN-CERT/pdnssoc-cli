@@ -3,8 +3,9 @@ logging_level: "INFO"
 misp_servers:
   - domain: "https://example-misp-instance.com"
     api_key: "API_KEY"
-    parameter_domains: ""
-    parameter_ips: ""
+    # Passes as arguments to misp.search()
+    args:
+      date_from: '2023-01-01'
 
 correlation:
   output_dir: ./output_dir/

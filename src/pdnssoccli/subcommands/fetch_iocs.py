@@ -51,7 +51,7 @@ async def fetch_iocs(ctx,
     for misp_conf in ctx.obj['CONFIG']["misp_servers"]:
         misp = PyMISP(misp_conf['domain'], misp_conf['api_key'], True, debug=False)
         if misp:
-            misp_connections.append(misp)
+            misp_connections.append((misp, misp_conf['args']))
 
     # Check if domain ioc files already exist
     domains_file_path = correlation_config['malicious_domains_file']
@@ -66,8 +66,8 @@ async def fetch_iocs(ctx,
 
 
     # Get new attributes
-    for misp in misp_connections:
-        attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True)
+    for misp, args in misp_connections:
+        attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True, **args)
         for attribute in attributes:
             domain_attributes_new.append(attribute.value)
 
@@ -90,8 +90,8 @@ async def fetch_iocs(ctx,
             ips_attributes_old.append(ip.strip())
 
 
-    for misp in misp_connections:
-        ips_iter = misp.search(controller='attributes', type_attribute=['ip-src','ip-dst'], to_ids=1, pythonify=True)
+    for misp, args in misp_connections:
+        ips_iter = misp.search(controller='attributes', type_attribute=['ip-src','ip-dst'], to_ids=1, pythonify=True, **args)
         for attribute in ips_iter:
             ips_attributes_new.append(attribute.value)
 

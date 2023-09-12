@@ -30,7 +30,9 @@ Configuration can be provided using the ``--config`` flag in yaml format:
 
         misp_servers:
             - domain: "https://example-misp-instance.com"
-                api_key: "API_KEY"
+              api_key: "API_KEY"
+              args:
+                date_from: '2023-01-01'
 
         correlation:
             output_dir: ./output_dir/
