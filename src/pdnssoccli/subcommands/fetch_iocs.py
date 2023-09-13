@@ -2,10 +2,9 @@ import click
 import logging
 from pymisp import PyMISP
 from pathlib import Path
-from pdnssoccli.subcommands.utils import make_sync
 from pdnssoccli.utils import file as pdnssoc_file_utils
 
-logger = logging.getLogger("pdnssoccli")
+logger = logging.getLogger(__name__)
 
 
 
@@ -34,15 +33,9 @@ logger = logging.getLogger("pdnssoccli")
         readable=True
     ),
 )
-@make_sync
 @click.pass_context
-async def fetch_iocs(ctx,
+def fetch_iocs(ctx,
     **kwargs):
-
-    # Configure logging
-    logging.basicConfig(
-        level=ctx.obj['CONFIG']['logging_level']
-    )
 
     correlation_config = ctx.obj['CONFIG']['correlation']
 
@@ -100,3 +93,6 @@ async def fetch_iocs(ctx,
         with pdnssoc_file_utils.write_generic(ips_file) as fp:
             for attribute in list(set(ips_attributes_new)):
                 fp.write("{}\n".format(attribute))
+
+    logger.info("Finished fetching of IOCs")
+    logger.info("Currently {} domains and {} ips".format(len(set(ips_attributes_new)), len(set(domain_attributes_new))))

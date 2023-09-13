@@ -12,3 +12,11 @@ correlation:
   malicious_domains_file: ./misp_domains.txt
   malicious_ips_file: ./misp_ips.txt
   last_correlation_pointer_file: ./correlation.last
+
+schedules:
+  fetch_iocs:
+    interval: 10 # minutes
+  correlation:
+    interval: 1 # minutes
+  retro:
+    interval: 1440 # minutes

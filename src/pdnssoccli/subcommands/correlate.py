@@ -10,8 +10,9 @@ import logging
 import jsonlines
 from pymisp import PyMISP
 from pathlib import Path
+import shutil
 
-logger = logging.getLogger("pdnssoccli")
+logger = logging.getLogger(__name__)
 
 @click.command(help="Correlate input files and output matches")
 @click.argument(
@@ -40,7 +41,7 @@ logger = logging.getLogger("pdnssoccli")
     'end_date',
     '--end-date',
     type=click.DateTime(formats=["%Y-%m-%dT%H:%M:%S"]),
-    default=datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    default=None
 )
 @click.option(
     'delete_on_success',
@@ -48,6 +49,13 @@ logger = logging.getLogger("pdnssoccli")
     '-D',
     is_flag=True,
     help="Delete file on success.",
+    default=False
+)
+@click.option(
+    'retro_lookup',
+    '--retro_lookup',
+    is_flag=True,
+    help="Correlate retrospectively with up to date IOCs",
     default=False
 )
 @click.option(
@@ -78,47 +86,49 @@ logger = logging.getLogger("pdnssoccli")
         readable=True
     ),
 )
-@make_sync
 @click.pass_context
-async def correlate(ctx,
+def correlate(ctx,
     **kwargs):
 
     correlation_config = ctx.obj['CONFIG']['correlation']
 
-    # Configure logging
-    logging.basicConfig(
-        level=ctx.obj['CONFIG']['logging_level']
-    )
-
-    # Determine start date
-    if not kwargs.get('start_date'):
-        if 'last_correlation_pointer_file' in correlation_config:
-            last_correlation_path = Path(correlation_config['last_correlation_pointer_file'])
-            if last_correlation_path.is_file():
-                correlation_last , _  = pdnssoc_file_utils.read_file(Path(correlation_config['last_correlation_pointer_file']))
-                for line in correlation_last:
-                    timestamp = pdnssoc_time_utils.parse_rfc3339_ns(
-                        line
-                    )
-                    start_date = timestamp
-                    break
+    if not kwargs.get('retro_lookup'):
+        # Determine start date
+        if not kwargs.get('start_date'):
+            if 'last_correlation_pointer_file' in correlation_config:
+                last_correlation_path = Path(correlation_config['last_correlation_pointer_file'])
+                if last_correlation_path.is_file():
+                    correlation_last , _  = pdnssoc_file_utils.read_file(Path(correlation_config['last_correlation_pointer_file']))
+                    for line in correlation_last:
+                        timestamp = pdnssoc_time_utils.parse_rfc3339_ns(
+                            line
+                        )
+                        start_date = timestamp
+                        break
+                else:
+                    logger.warning("Last correlation file at {} not existing. Will be recreated".format(correlation_config['last_correlation_pointer_file']))
+                    start_date = datetime.now()
             else:
-                logger.warning("Last correlation file at {} not existing. Will be recreated".format(correlation_config['last_correlation_pointer_file']))
                 start_date = datetime.now()
         else:
-            start_date = datetime.now()
-    else:
-        start_date = kwargs.get('start_date')
-    end_date = kwargs.get('end_date')
+            start_date = kwargs.get('start_date')
 
+        if not kwargs.get('end_date'):
+            end_date = datetime.now()
+        else:
+            end_date = kwargs.get('end_date')
 
-    # Parse json file and only keep alerts in range
-    logging.info(
-        "Parsing alerts from: {} to {}".format(
-            start_date,
-            end_date
+        # Parse json file and only keep alerts in range
+        logging.info(
+            "Parsing alerts from: {} to {}".format(
+                start_date,
+                end_date
+            )
         )
-    )
+    else:
+        logging.info("Retro mode. Correlate every match detected")
+        start_date = None
+        end_date = None
 
     # Set up MISP connections
     misp_connections = []
@@ -130,7 +140,8 @@ async def correlate(ctx,
 
     # Set up domain and ip blacklists
     domain_attributes = []
-    if 'malicious_domains_file' in correlation_config and correlation_config['malicious_domains_file']:
+    domain_attributes_metadata = {}
+    if 'malicious_domains_file' in correlation_config and correlation_config['malicious_domains_file'] and not kwargs.get('retro_lookup'):
         domains_iter, _ = pdnssoc_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
         for domain in domains_iter:
             domain_attributes.append(domain.strip())
@@ -139,12 +150,15 @@ async def correlate(ctx,
             attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True)
             for attribute in attributes:
                 domain_attributes.append(attribute.value)
+                if kwargs.get('retro_lookup'):
+                    domain_attributes_metadata[attribute.value] = attribute
 
     domain_attributes = list(set(domain_attributes))
 
 
     ip_attributes = []
-    if 'malicious_ips_file' in correlation_config and correlation_config['malicious_ips_file']:
+    ip_attributes_metadata = {}
+    if 'malicious_ips_file' in correlation_config and correlation_config['malicious_ips_file'] and not kwargs.get('retro_lookup'):
         ips_iter, _ = pdnssoc_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
         for attribute in ips_iter:
             try:
@@ -159,13 +173,20 @@ async def correlate(ctx,
             try:
                 network = ipaddress.ip_network(attribute.value, strict=False)
                 ip_attributes.append(network)
+                if kwargs.get('retro_lookup'):
+                    ip_attributes_metadata[attribute.value] = attribute
             except ValueError:
                 logging.warning("Invalid malicious IP value {}".format(attribute.value))
 
     total_matches = []
     total_matches_minified = []
 
-    for file in kwargs.get('files'):
+    if not kwargs.get('files'):
+        files = [correlation_config['input_dir']]
+    else:
+        files = kwargs.get('files')
+
+    for file in files:
         file_path = Path(file)
 
         if file_path.is_file():
@@ -179,6 +200,8 @@ async def correlate(ctx,
                     end_date,
                     set(domain_attributes),
                     set(ip_attributes),
+                    domain_attributes_metadata,
+                    ip_attributes_metadata,
                     is_minified
                 )
                 logger.info("Found {} matches in {}".format(len(matches), file_path.absolute()))
@@ -204,6 +227,8 @@ async def correlate(ctx,
                             end_date,
                             set(domain_attributes),
                             set(ip_attributes),
+                            domain_attributes_metadata,
+                            ip_attributes_metadata,
                             is_minified
                         )
 
@@ -218,8 +243,8 @@ async def correlate(ctx,
                 shutil.rmtree(file)
 
 
-    enriched = await pdnssoc_enrichment_utils.enrich_logs(total_matches, misp_connections, False)
-    enriched_minified = await pdnssoc_enrichment_utils.enrich_logs(total_matches_minified, misp_connections, True)
+    enriched = pdnssoc_enrichment_utils.enrich_logs(total_matches, misp_connections, False)
+    enriched_minified = pdnssoc_enrichment_utils.enrich_logs(total_matches_minified, misp_connections, True)
 
     # Output to directory
     # Write full matches to matches.json

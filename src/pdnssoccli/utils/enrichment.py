@@ -53,7 +53,7 @@ def build_misp_events(misp_response, misp_connection, encountered_events, query)
     return misp_events, encountered_events
 
 
-async def enrich_logs(logs, misp_connections, is_minified):
+def enrich_logs(logs, misp_connections, is_minified):
     enriched_results = []
 
     for log in logs:

@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
-import asyncio
 import click
 import logging
 import yaml
 from pdnssoccli.subcommands.fetch_iocs import fetch_iocs
 from pdnssoccli.subcommands.correlate import correlate
+from pdnssoccli.subcommands.daemonize import daemonize
 from pdnssoccli.subcommands.utils import make_sync
 
 
@@ -34,16 +34,21 @@ def configure(ctx, param, filename):
     show_default = True,
 )
 @click.pass_context
-@make_sync
-async def main(ctx,
+def main(ctx,
     **kwargs
 ):
     ctx.ensure_object(dict)
     ctx.obj['CONFIG'] = ctx.default_map
 
+    # Configure logging
+    logging.basicConfig(
+        level=ctx.obj['CONFIG']['logging_level']
+    )
+
 
 main.add_command(correlate)
 main.add_command(fetch_iocs)
+main.add_command(daemonize)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

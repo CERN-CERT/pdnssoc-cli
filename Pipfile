@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 aiofiles = "*"
 ipaddress = "*"
+schedule = "*"
+pytz = "*"
 
 [dev-packages]
 keyring = "*"

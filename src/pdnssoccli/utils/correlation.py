@@ -4,6 +4,7 @@ import logging
 from . import time as pdnssoc_time_utils
 from cachetools import cached
 from cachetools.keys import hashkey
+import pytz
 
 logger = logging.getLogger("pdnssoccli")
 
@@ -26,9 +27,8 @@ def correlate_answer(answer, ip_set):
 
 
 def correlate_events(lines, shared_data):
-    (start_date, end_date, domain_attributes, ip_attributes, is_minified) = shared_data
+    (start_date, end_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified) = shared_data
     total_matches = []
-
 
     for line in lines:
         try:
@@ -51,20 +51,30 @@ def correlate_events(lines, shared_data):
             answers = match['dns']['resource-records']['an']
 
         # parse timestamp
-        if start_date < timestamp <= end_date:
+        if (start_date == None and end_date == None) or start_date < timestamp <= end_date:
             if correlate_query(query, domain_attributes):
-                logging.debug("Matched {}".format(match))
-                total_matches.append(match)
-                continue
+                if domain_attributes_metadata: # retro mode
+                    if domain_attributes_metadata[query].timestamp > pytz.utc.localize(timestamp):
+                        total_matches.append(match)
+                        continue
+                else:
+                    logging.debug("Matched {}".format(match))
+                    total_matches.append(match)
+                    continue
 
             for answer in answers:
                 if correlate_answer(answer, ip_attributes):
-                    total_matches.append(match)
+                    if ip_attributes_metadata: # retro mode
+                        if ip_attributes_metadata[answer['rdata']].timestamp > pytz.utc.localize(timestamp):
+                            total_matches.append(match)
+                            continue
+                    else:
+                        total_matches.append(match)
                     break
 
     return total_matches
 
-def correlate_file(file_iter, start_date, end_date, domain_attributes, ip_attributes, is_minified):
+def correlate_file(file_iter, start_date, end_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified):
     total_matches = []
-    total_matches = correlate_events(file_iter, (start_date, end_date, domain_attributes, ip_attributes, is_minified))
+    total_matches = correlate_events(file_iter, (start_date, end_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified))
     return total_matches
