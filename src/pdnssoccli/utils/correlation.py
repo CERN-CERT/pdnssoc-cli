@@ -37,8 +37,6 @@ def correlate_events(lines, shared_data):
             logger.warning("Ignoring line due to unrecognized format:{}".format(line))
             continue
 
-        match_found = False
-
         if is_minified:
             timestamp = pdnssoc_time_utils.parse_rfc3339_ns(match['timestamp'])
             query = match['query']

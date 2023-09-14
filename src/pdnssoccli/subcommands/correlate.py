@@ -217,23 +217,27 @@ def correlate(ctx,
             file_iter, is_minified =  pdnssoc_file_utils.read_file(file_path)
 
             if file_iter:
-                matches = pdnssoc_correlation_utils.correlate_file(
-                    file_iter,
-                    start_date,
-                    end_date,
-                    retro_last_date,
-                    set(domain_attributes),
-                    set(ip_attributes),
-                    domain_attributes_metadata,
-                    ip_attributes_metadata,
-                    is_minified
-                )
-                logger.info("Found {} matches in {}".format(len(matches), file_path.absolute()))
+                try:
+                    matches = pdnssoc_correlation_utils.correlate_file(
+                        file_iter,
+                        start_date,
+                        end_date,
+                        retro_last_date,
+                        set(domain_attributes),
+                        set(ip_attributes),
+                        domain_attributes_metadata,
+                        ip_attributes_metadata,
+                        is_minified
+                    )
+                    logger.info("Found {} matches in {}".format(len(matches), file_path.absolute()))
 
-                if is_minified:
-                    total_matches_minified.extend(matches)
-                else:
-                    total_matches.extend(matches)
+                    if is_minified:
+                        total_matches_minified.extend(matches)
+                    else:
+                        total_matches.extend(matches)
+                except:
+                    logger.error("Failed to parse {}, skipping".format(file))
+                    continue
 
             if kwargs.get('delete_on_success'):
                 file_path.unlink()
@@ -245,24 +249,28 @@ def correlate(ctx,
                     file_iter, is_minified =  pdnssoc_file_utils.read_file(nested_path)
 
                     if file_iter:
-                        matches = pdnssoc_correlation_utils.correlate_file(
-                            file_iter,
-                            start_date,
-                            end_date,
-                            retro_last_date,
-                            set(domain_attributes),
-                            set(ip_attributes),
-                            domain_attributes_metadata,
-                            ip_attributes_metadata,
-                            is_minified
-                        )
+                        try:
+                            matches = pdnssoc_correlation_utils.correlate_file(
+                                file_iter,
+                                start_date,
+                                end_date,
+                                retro_last_date,
+                                set(domain_attributes),
+                                set(ip_attributes),
+                                domain_attributes_metadata,
+                                ip_attributes_metadata,
+                                is_minified
+                            )
 
-                        logger.info("Found {} matches in {}".format(len(matches), nested_path.absolute()))
+                            logger.info("Found {} matches in {}".format(len(matches), nested_path.absolute()))
 
-                        if is_minified:
-                            total_matches_minified.extend(matches)
-                        else:
-                            total_matches.extend(matches)
+                            if is_minified:
+                                total_matches_minified.extend(matches)
+                            else:
+                                total_matches.extend(matches)
+                        except:
+                            logger.error("Failed to parse {}, skipping".format(nested_path))
+                            continue
 
             if kwargs.get('delete_on_success'):
                 shutil.rmtree(file)
