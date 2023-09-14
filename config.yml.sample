@@ -8,10 +8,13 @@ misp_servers:
       date_from: '2023-01-01'
 
 correlation:
+  input_dir: ./input_dir/ # use this if no files are defined from commmand line
   output_dir: ./output_dir/
+  archive_dir: ./archive/ # use this as input for looking back
   malicious_domains_file: ./misp_domains.txt
   malicious_ips_file: ./misp_ips.txt
   last_correlation_pointer_file: ./correlation.last
+  last_retro_pointer_file: ./retro.last
 
 schedules:
   fetch_iocs:

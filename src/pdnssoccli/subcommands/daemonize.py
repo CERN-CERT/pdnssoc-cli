@@ -20,6 +20,7 @@ def daemonize(ctx, **kwargs):
     logger.info("Starting pdnssoc-cli in daemonized mode")
 
     daemon_config = ctx.obj['CONFIG']['schedules']
+    correlation_config = ctx.obj['CONFIG']['correlation']
 
     def run_threaded(job_func):
         job_thread = threading.Thread(target=job_func)
@@ -32,7 +33,7 @@ def daemonize(ctx, **kwargs):
         ctx.invoke(correlate)
 
     def daemonized_retro():
-        ctx.invoke(correlate, **{'retro_lookup': True})
+        ctx.invoke(correlate, **{'retro_lookup': True, 'files':[correlation_config['archive_dir']]})
 
 
     # Establish scheduled tasks according to documentation
