@@ -27,7 +27,7 @@ def correlate_answer(answer, ip_set):
 
 
 def correlate_events(lines, shared_data):
-    (start_date, end_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified) = shared_data
+    (start_date, end_date, retro_last_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified) = shared_data
     total_matches = []
 
     for line in lines:
@@ -54,7 +54,7 @@ def correlate_events(lines, shared_data):
         if (start_date == None and end_date == None) or start_date < timestamp <= end_date:
             if correlate_query(query, domain_attributes):
                 if domain_attributes_metadata: # retro mode
-                    if domain_attributes_metadata[query].timestamp > pytz.utc.localize(timestamp):
+                    if domain_attributes_metadata[query] > pytz.utc.localize(timestamp) and (not retro_last_date or domain_attributes_metadata[query] > pytz.utc.localize(retro_last_date)):
                         total_matches.append(match)
                         continue
                 else:
@@ -65,7 +65,7 @@ def correlate_events(lines, shared_data):
             for answer in answers:
                 if correlate_answer(answer, ip_attributes):
                     if ip_attributes_metadata: # retro mode
-                        if ip_attributes_metadata[answer['rdata']].timestamp > pytz.utc.localize(timestamp):
+                        if ip_attributes_metadata[answer['rdata']] > pytz.utc.localize(timestamp) and (not retro_last_date or ip_attributes_metadata[answer['rdata']] > pytz.utc.localize(retro_last_date)):
                             total_matches.append(match)
                             continue
                     else:
@@ -74,7 +74,7 @@ def correlate_events(lines, shared_data):
 
     return total_matches
 
-def correlate_file(file_iter, start_date, end_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified):
+def correlate_file(file_iter, start_date, end_date, retro_last_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified):
     total_matches = []
-    total_matches = correlate_events(file_iter, (start_date, end_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified))
+    total_matches = correlate_events(file_iter, (start_date, end_date, retro_last_date, domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified))
     return total_matches

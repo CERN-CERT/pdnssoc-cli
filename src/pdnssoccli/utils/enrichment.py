@@ -74,7 +74,7 @@ def enrich_logs(logs, misp_connections, is_minified):
         misp_events = []
         encountered_events = set()
 
-        for misp_connection in misp_connections:
+        for misp_connection, args in misp_connections:
             # Search for query
             r = query_misp(misp_connection, query, ['domain'])
 

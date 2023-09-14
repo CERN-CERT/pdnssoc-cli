@@ -92,6 +92,7 @@ def correlate(ctx,
 
     correlation_config = ctx.obj['CONFIG']['correlation']
 
+    retro_last_date = None
     if not kwargs.get('retro_lookup'):
         # Determine start date
         if not kwargs.get('start_date'):
@@ -129,13 +130,24 @@ def correlate(ctx,
         logging.info("Retro mode. Correlate every match detected")
         start_date = None
         end_date = None
+        # Get last retro date:
+        if 'last_retro_pointer_file' in correlation_config:
+            last_retro_path = Path(correlation_config['last_retro_pointer_file'])
+            if last_retro_path.is_file():
+                retro_last , _  = pdnssoc_file_utils.read_file(Path(correlation_config['last_retro_pointer_file']))
+                for line in retro_last:
+                    timestamp = pdnssoc_time_utils.parse_rfc3339_ns(
+                        line
+                    )
+                    retro_last_date = timestamp
+                    break
 
     # Set up MISP connections
     misp_connections = []
     for misp_conf in ctx.obj['CONFIG']["misp_servers"]:
         misp = PyMISP(misp_conf['domain'], misp_conf['api_key'], True, debug=False)
         if misp:
-            misp_connections.append(misp)
+            misp_connections.append((misp, misp_conf['args']))
 
 
     # Set up domain and ip blacklists
@@ -146,15 +158,18 @@ def correlate(ctx,
         for domain in domains_iter:
             domain_attributes.append(domain.strip())
     else:
-        for misp in misp_connections:
-            attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True)
+        for misp, args in misp_connections:
+            attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True, **args)
             for attribute in attributes:
                 domain_attributes.append(attribute.value)
                 if kwargs.get('retro_lookup'):
-                    domain_attributes_metadata[attribute.value] = attribute
+                    if attribute.value in domain_attributes_metadata:
+                        if attribute.timestamp > domain_attributes_metadata[attribute.value]:
+                            domain_attributes_metadata[attribute.value] = attribute.timestamp
+                    else:
+                        domain_attributes_metadata[attribute.value] = attribute.timestamp
 
     domain_attributes = list(set(domain_attributes))
-
 
     ip_attributes = []
     ip_attributes_metadata = {}
@@ -167,17 +182,25 @@ def correlate(ctx,
             except ValueError:
                 logging.warning("Invalid malicious IP value {}".format(attribute))
     else:
-        ips_iter = misp.search(controller='attributes', type_attribute=['ip-src','ip-dst'], to_ids=1, pythonify=True)
+        for misp, args in misp_connections:
+            ips_iter = misp.search(controller='attributes', type_attribute=['ip-src','ip-dst'], to_ids=1, pythonify=True, **args)
 
-        for attribute in ips_iter:
-            try:
-                network = ipaddress.ip_network(attribute.value, strict=False)
-                ip_attributes.append(network)
-                if kwargs.get('retro_lookup'):
-                    ip_attributes_metadata[attribute.value] = attribute
-            except ValueError:
-                logging.warning("Invalid malicious IP value {}".format(attribute.value))
+            for attribute in ips_iter:
+                try:
+                    network = ipaddress.ip_network(attribute.value, strict=False)
+                    ip_attributes.append(network)
+                    if kwargs.get('retro_lookup'):
+                        if attribute.value in ip_attributes_metadata:
+                            if attribute.timestamp > ip_attributes_metadata[attribute.value]:
+                                ip_attributes_metadata[attribute.value] = attribute.timestamp
+                        else:
+                            ip_attributes_metadata[attribute.value] = attribute.timestamp
+                except ValueError:
+                    logging.warning("Invalid malicious IP value {}".format(attribute.value))
 
+    ip_attributes = list(set(ip_attributes))
+
+    logger.info("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes)))
     total_matches = []
     total_matches_minified = []
 
@@ -198,6 +221,7 @@ def correlate(ctx,
                     file_iter,
                     start_date,
                     end_date,
+                    retro_last_date,
                     set(domain_attributes),
                     set(ip_attributes),
                     domain_attributes_metadata,
@@ -225,6 +249,7 @@ def correlate(ctx,
                             file_iter,
                             start_date,
                             end_date,
+                            retro_last_date,
                             set(domain_attributes),
                             set(ip_attributes),
                             domain_attributes_metadata,
@@ -256,11 +281,16 @@ def correlate(ctx,
         for document in to_output:
             writer.write(document)
 
-    # if new correlations, keep last timestamp
-    if to_output:
-        last_correlation = to_output[-1]['timestamp']
+    if kwargs.get('retro_lookup'):
+        last_retro = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        with pdnssoc_file_utils.write_generic(correlation_config['last_retro_pointer_file']) as fp:
+            fp.write("{}\n".format(last_retro))
     else:
-        last_correlation = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        # if new correlations, keep last timestamp
+        if to_output:
+            last_correlation = to_output[-1]['timestamp']
+        else:
+            last_correlation = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-    with pdnssoc_file_utils.write_generic(correlation_config['last_correlation_pointer_file']) as fp:
-            fp.write("{}\n".format(last_correlation))
+        with pdnssoc_file_utils.write_generic(correlation_config['last_correlation_pointer_file']) as fp:
+                fp.write("{}\n".format(last_correlation))

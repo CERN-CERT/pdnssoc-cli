@@ -95,4 +95,4 @@ def fetch_iocs(ctx,
                 fp.write("{}\n".format(attribute))
 
     logger.info("Finished fetching of IOCs")
-    logger.info("Currently {} domains and {} ips".format(len(set(ips_attributes_new)), len(set(domain_attributes_new))))
+    logger.info("Currently {} domains and {} ips".format(len(set(domain_attributes_new)), len(set(ips_attributes_new))))
