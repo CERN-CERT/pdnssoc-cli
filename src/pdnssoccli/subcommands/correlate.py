@@ -91,6 +91,7 @@ def correlate(ctx,
     **kwargs):
 
     correlation_config = ctx.obj['CONFIG']['correlation']
+    correlation_start_dt = datetime.now()
 
     retro_last_date = None
     if not kwargs.get('retro_lookup'):
@@ -108,14 +109,14 @@ def correlate(ctx,
                         break
                 else:
                     logger.warning("Last correlation file at {} not existing. Will be recreated".format(correlation_config['last_correlation_pointer_file']))
-                    start_date = datetime.now()
+                    start_date = correlation_start_dt
             else:
-                start_date = datetime.now()
+                start_date = correlation_start_dt
         else:
             start_date = kwargs.get('start_date')
 
         if not kwargs.get('end_date'):
-            end_date = datetime.now()
+            end_date = correlation_start_dt
         else:
             end_date = kwargs.get('end_date')
 
@@ -290,7 +291,7 @@ def correlate(ctx,
             writer.write(document)
 
     if kwargs.get('retro_lookup'):
-        last_retro = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        last_retro = correlation_start_dt.strftime("%Y-%m-%dT%H:%M:%S")
         with pdnssoc_file_utils.write_generic(correlation_config['last_retro_pointer_file']) as fp:
             fp.write("{}\n".format(last_retro))
     else:
@@ -298,7 +299,7 @@ def correlate(ctx,
         if to_output:
             last_correlation = to_output[-1]['timestamp']
         else:
-            last_correlation = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            last_correlation = correlation_start_dt.strftime("%Y-%m-%dT%H:%M:%S")
 
         with pdnssoc_file_utils.write_generic(correlation_config['last_correlation_pointer_file']) as fp:
                 fp.write("{}\n".format(last_correlation))
