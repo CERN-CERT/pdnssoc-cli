@@ -200,7 +200,7 @@ def correlate(ctx,
 
     ip_attributes = list(set(ip_attributes))
 
-    logger.info("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes)))
+    logger.debug("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes)))
     total_matches = []
     total_matches_minified = []
 

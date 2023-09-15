@@ -45,6 +45,9 @@ def main(ctx,
         level=ctx.obj['CONFIG']['logging_level']
     )
 
+    pymisp_logger = logging.getLogger("pymisp")
+    pymisp_logger.setLevel(ctx.obj['CONFIG']['logging_level'])
+
 
 main.add_command(correlate)
 main.add_command(fetch_iocs)
