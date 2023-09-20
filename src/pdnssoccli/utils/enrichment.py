@@ -43,7 +43,9 @@ def build_misp_events(misp_response, misp_connection, encountered_events, query)
                             'publication': event.date.strftime("%Y-%m-%d"),
                             'organization': event.Orgc.name,
                             'comment': attribute.comment,
-                            'tags': tags
+                            'tags': tags,
+                            #'ioc': attribute.value,
+                            #'ioc_type': attribute.type
                         }
                     )
                     break

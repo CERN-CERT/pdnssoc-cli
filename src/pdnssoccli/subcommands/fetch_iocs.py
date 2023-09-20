@@ -46,23 +46,56 @@ def fetch_iocs(ctx,
         if misp:
             misp_connections.append((misp, misp_conf['args']))
 
+    domain_attributes_old = []
+    domain_attributes_new = []
+    ips_attributes_new = []
+    ips_attributes_old = []
+
+    # Get new attributes
+    for misp, args in misp_connections:
+        attributes = misp.search(
+            controller='attributes',
+            type_attribute=[
+                'domain',
+                'domain|ip',
+                'hostname',
+                'hostname|port',
+                'ip-src',
+                'ip-src|port',
+                'ip-dst',
+                'ip-dst|port',
+            ],
+            to_ids=1,
+            pythonify=True,
+            **args
+        )
+        for attribute in attributes:
+            # Put to bucket according to attribute type
+            match attribute.type:
+                case 'domain' | 'hostname':
+                    domain_attributes_new.append(attribute.value)
+                case 'domain|ip':
+                    domain_val, ip_val = attribute.value.split("|")
+                    domain_attributes_new.append(domain_val)
+                    ips_attributes_new.append(ip_val)
+                case 'hostname|port':
+                    hostname_val, _ = attribute.value.split("|")
+                    domain_attributes_new.append(hostname_val)
+                case 'ip-src' | 'ip-dst':
+                    ips_attributes_new.append(attribute.value)
+                case 'ip-src|port' | 'ip-dst|port':
+                    ip_val, _ = attribute.value.split("|")
+                    ips_attributes_new.append(ip_val)
+
     # Check if domain ioc files already exist
     domains_file_path = correlation_config['malicious_domains_file']
     domains_file = Path(domains_file_path)
-    domain_attributes_old = []
-    domain_attributes_new = []
+
     if domains_file.is_file():
         # File exists, let's try to update it
         domains_iter, _ = pdnssoc_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
         for domain in domains_iter:
             domain_attributes_old.append(domain.strip())
-
-
-    # Get new attributes
-    for misp, args in misp_connections:
-        attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True, **args)
-        for attribute in attributes:
-            domain_attributes_new.append(attribute.value)
 
     if set(domain_attributes_old) != set(domain_attributes_new):
         # We spotted a difference, let's overwrite the existing file
@@ -74,19 +107,11 @@ def fetch_iocs(ctx,
     ips_file_path = correlation_config['malicious_ips_file']
     ips_file = Path(ips_file_path)
 
-    ips_attributes_old = []
-    ips_attributes_new = []
     if ips_file.is_file():
         # File exists, let's try to update it
         ips_iter, _ = pdnssoc_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
         for ip in ips_iter:
             ips_attributes_old.append(ip.strip())
-
-
-    for misp, args in misp_connections:
-        ips_iter = misp.search(controller='attributes', type_attribute=['ip-src','ip-dst'], to_ids=1, pythonify=True, **args)
-        for attribute in ips_iter:
-            ips_attributes_new.append(attribute.value)
 
     if set(ips_attributes_old) != set(ips_attributes_new):
         # We spotted a difference, let's overwrite the existing file
@@ -95,4 +120,4 @@ def fetch_iocs(ctx,
                 fp.write("{}\n".format(attribute))
 
     logger.debug("Finished fetching of IOCs")
-    logger.info("Currently {} domains and {} ips".format(len(set(domain_attributes_new)), len(set(ips_attributes_new))))
+    logger.info("Currently {} domains and {} ips".format(len(set(domain_attributes_new).union(set(domain_attributes_new))), len(set(ips_attributes_new).union(set(ips_attributes_old)))))
