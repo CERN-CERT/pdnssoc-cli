@@ -296,7 +296,7 @@ def correlate(ctx,
             fp.write("{}\n".format(last_retro))
     else:
         # if new correlations, keep last timestamp
-        if to_output:
+        if total_matches+total_matches_minified:
             last_correlation = to_output[-1]['timestamp']
         else:
             last_correlation = correlation_start_dt.strftime("%Y-%m-%dT%H:%M:%S")
