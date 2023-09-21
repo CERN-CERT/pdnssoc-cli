@@ -26,34 +26,33 @@ def build_misp_events(misp_response, misp_connection, encountered_events, query)
     for attribute in misp_response:
         event = attribute.Event
         if not event.uuid in encountered_events:
-            if attribute.value == query:
-                tags = []
-                for tag in attribute.tags:
-                    tags.append(
-                        {
-                            "colour": tag.colour,
-                            "name": tag.name
-                        }
-                    )
-
-                misp_events.append(
+            tags = []
+            for tag in attribute.tags:
+                tags.append(
                     {
-                        'uuid': event.uuid,
-                        'info': event.info,
-                        'id': event.id,
-                        'server': misp_connection.root_url,
-                        'event_url': "{}/events/view/{}".format(misp_connection.root_url, event.id),
-                        #'num_iocs': event.attribute_count,
-                        'publication': event.date.strftime("%Y-%m-%d"),
-                        'organization': event.Orgc.name,
-                        'comment': attribute.comment,
-                        'tags': tags,
-                        'ioc': attribute.value,
-                        'ioc_type': attribute.type
+                        "colour": tag.colour,
+                        "name": tag.name
                     }
                 )
 
-                encountered_events.add(event.uuid)
+            misp_events.append(
+                {
+                    'uuid': event.uuid,
+                    'info': event.info,
+                    'id': event.id,
+                    'server': misp_connection.root_url,
+                    'event_url': "{}/events/view/{}".format(misp_connection.root_url, event.id),
+                    #'num_iocs': event.attribute_count,
+                    'publication': event.date.strftime("%Y-%m-%d"),
+                    'organization': event.Orgc.name,
+                    'comment': attribute.comment,
+                    'tags': tags,
+                    'ioc': attribute.value,
+                    'ioc_type': attribute.type
+                }
+            )
+
+            encountered_events.add(event.uuid)
 
     return misp_events, encountered_events
 
