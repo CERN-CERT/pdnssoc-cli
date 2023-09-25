@@ -8,6 +8,7 @@ aiofiles = "*"
 ipaddress = "*"
 schedule = "*"
 pytz = "*"
+jinja2 = "*"
 
 [dev-packages]
 keyring = "*"
