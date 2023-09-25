@@ -15,7 +15,8 @@ def query_misp(misp_connection, value, types):
         pythonify=True,
         debug=False,
         to_ids=True,
-        enforce_warninglist=True
+        enforce_warninglist=True,
+        include_event_tags=True
     )
 
     return r

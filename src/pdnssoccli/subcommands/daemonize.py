@@ -3,6 +3,7 @@ from pdnssoccli.subcommands.utils import make_sync
 
 from pdnssoccli.subcommands.fetch_iocs import fetch_iocs
 from pdnssoccli.subcommands.correlate import correlate
+from pdnssoccli.subcommands.alert import alert
 
 import click
 import logging
@@ -35,6 +36,9 @@ def daemonize(ctx, **kwargs):
     def daemonized_retro():
         ctx.invoke(correlate, **{'retro_lookup': True, 'files':[correlation_config['archive_dir']]})
 
+    def daemonized_alerting():
+        ctx.invoke(alert)
+
 
     # Establish scheduled tasks according to documentation
     if 'fetch_iocs' in daemon_config:
@@ -48,6 +52,10 @@ def daemonize(ctx, **kwargs):
     if 'retro' in daemon_config:
         logger.info("Scheduled [retro] with a {} minutes period".format(daemon_config['retro']['interval']))
         schedule.every(daemon_config['retro']['interval']).minutes.do(run_threaded, daemonized_retro)
+
+    if 'alerting' in daemon_config:
+        logger.info("Scheduled [alerting] with a {} minutes period".format(daemon_config['alerting']['interval']))
+        schedule.every(daemon_config['alerting']['interval']).minutes.do(run_threaded, daemonized_alerting)
 
     # First execution of all scheduled on startup
     schedule.run_all()

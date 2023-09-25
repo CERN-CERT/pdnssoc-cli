@@ -62,3 +62,4 @@ tests/test_out
 tests/archive
 tests/correlation.last
 tests/retro.last
+tests/alert.last

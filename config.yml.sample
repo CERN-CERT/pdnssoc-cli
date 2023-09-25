@@ -23,3 +23,18 @@ schedules:
     interval: 1 # minutes
   retro:
     interval: 1440 # minutes
+  alerting:
+    interval: 60 # minutes
+
+alerting:
+  last_alerting_pointer_file: ./tests/alert.last
+  email:
+    from: "pdnssoc-dev@domain.tld"
+    subject: "[pDNSSOC] Community XYZ alert"
+    summary_to: "pdnssoc-dev@cern.ch"
+    server: "localhost"
+    port: 25
+    template: ./alert_email_template.html
+    mappings:
+      - client_id: client_1
+        contact: client_1_sec_team@domain.tld
