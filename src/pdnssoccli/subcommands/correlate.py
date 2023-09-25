@@ -116,7 +116,7 @@ def correlate(ctx,
             start_date = kwargs.get('start_date')
 
         if not kwargs.get('end_date'):
-            end_date = correlation_start_dt
+            end_date = datetime.now()
         else:
             end_date = kwargs.get('end_date')
 

@@ -71,7 +71,7 @@ def alert(ctx,
         start_date = kwargs.get('start_date')
 
     if not kwargs.get('end_date'):
-        end_date = alerting_start_dt
+        end_date = datetime.now()
     else:
         end_date = kwargs.get('end_date')
 
@@ -120,4 +120,4 @@ def alert(ctx,
 
     # Update the last alert file
     with pdnssoc_file_utils.write_generic(alerting_config['last_alerting_pointer_file']) as fp:
-        fp.write("{}\n".format(start_date.strftime("%Y-%m-%dT%H:%M:%S")))
+        fp.write("{}\n".format(end_date.strftime("%Y-%m-%dT%H:%M:%S")))
