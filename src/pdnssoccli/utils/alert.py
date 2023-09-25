@@ -47,6 +47,7 @@ def email_alerts(alerts, config, summary = False):
 
     if not alerts:
         logger.warn("No alerts to dispatch")
+        return None
     # Define a custom filter to enumerate elements
     def enumerate_filter(iterable):
         return enumerate(iterable, 1)  # Start counting from 1
