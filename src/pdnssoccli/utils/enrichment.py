@@ -81,7 +81,7 @@ def enrich_logs(logs, misp_connections, is_minified):
 
         for misp_connection, args in misp_connections:
             # Search for query
-            r = query_misp(misp_connection, query, ['domain', 'domain|ip', 'hostname', 'hostname|port', 'url'])
+            r = query_misp(misp_connection, query, ['domain', 'domain|ip', 'hostname', 'hostname|port'])
 
             query_events, encountered_events = build_misp_events(
                 r,
@@ -97,7 +97,7 @@ def enrich_logs(logs, misp_connections, is_minified):
                 if answer['rdatatype'] == 'A' or answer['rdatatype'] == 'AAAA':
                     r = query_misp(
                         misp_connection,
-                        "{}".format(answer['rdata']),
+                        answer['rdata'],
                         [
                             'domain',
                             'domain|ip',
@@ -106,20 +106,12 @@ def enrich_logs(logs, misp_connections, is_minified):
                             'ip-src',
                             'ip-src|port',
                             'ip-dst',
-                            'ip-dst|port',
-                        ]
-                    )
-
-                    r_url = query_misp(
-                        misp_connection,
-                        "http%://{}%".format(answer['rdata']),
-                        [
-                            'url'
+                            'ip-dst|port'
                         ]
                     )
 
                     answer_events, encountered_events = build_misp_events(
-                        r+r_url,
+                        r,
                         misp_connection,
                         encountered_events,
                         answer['rdata']

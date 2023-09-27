@@ -3,8 +3,6 @@ import logging
 from pymisp import PyMISP
 from pathlib import Path
 from pdnssoccli.utils import file as pdnssoc_file_utils
-from pdnssoccli.utils import ip_address as pdnssoc_ip_utils
-from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +64,6 @@ def fetch_iocs(ctx,
                 'ip-src|port',
                 'ip-dst',
                 'ip-dst|port',
-                'url'
             ],
             to_ids=1,
             pythonify=True,
@@ -89,20 +86,6 @@ def fetch_iocs(ctx,
                 case 'ip-src|port' | 'ip-dst|port':
                     ip_val, _ = attribute.value.split("|")
                     ips_attributes_new.append(ip_val)
-                case 'url':
-                    # Extract the domain from url
-                    domain = urlparse(attribute.value).netloc
-
-                    # Check if ip:port format
-                    if ":" in domain:
-                        ip_token, _ = domain.split(":")
-                        if pdnssoc_ip_utils.validIPAddress(ip_token):
-                            ips_attributes_new.append(ip_token)
-                    else:
-                        if pdnssoc_ip_utils.validIPAddress(domain):
-                            ips_attributes_new.append(domain)
-                        else:
-                            domain_attributes_new.append(domain)
 
     # Check if domain ioc files already exist
     domains_file_path = correlation_config['malicious_domains_file']
