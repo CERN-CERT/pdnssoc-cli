@@ -51,8 +51,11 @@ def fetch_iocs(ctx,
     ips_attributes_new = []
     ips_attributes_old = []
 
+
     # Get new attributes
     for misp, args in misp_connections:
+        ips_to_validate = set()
+
         attributes = misp.search(
             controller='attributes',
             type_attribute=[
@@ -85,7 +88,14 @@ def fetch_iocs(ctx,
                     ips_attributes_new.append(attribute.value)
                 case 'ip-src|port' | 'ip-dst|port':
                     ip_val, _ = attribute.value.split("|")
-                    ips_attributes_new.append(ip_val)
+
+                    # Check if value in warninglist:
+                    ips_to_validate.add(ip_val)
+
+        # Validate ip|port attributes against warninglists
+        warn_matches = misp.values_in_warninglist(list(ips_to_validate))
+        res = [i for i in list(ips_to_validate) if i not in warn_matches.keys()]
+        ips_attributes_new.extend(res)
 
     # Check if domain ioc files already exist
     domains_file_path = correlation_config['malicious_domains_file']
