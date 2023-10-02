@@ -4,8 +4,8 @@ import logging
 
 logger = logging.getLogger("pdnssoccli")
 
-@cached(cache={}, key=lambda misp_connection, value, types: hashkey(misp_connection.root_url, value, tuple(types)))
-def query_misp(misp_connection, value, types):
+@cached(cache={}, key=lambda misp_connection, args, value, types: hashkey(misp_connection.root_url, value, tuple(types)))
+def query_misp(misp_connection, args, value, types):
     r = misp_connection.search(
         controller="attributes",
         value=value,
@@ -15,8 +15,8 @@ def query_misp(misp_connection, value, types):
         pythonify=True,
         debug=False,
         to_ids=True,
-        enforce_warninglist=True,
-        include_event_tags=True
+        include_event_tags=True,
+        **args
     )
 
     return r
@@ -81,7 +81,7 @@ def enrich_logs(logs, misp_connections, is_minified):
 
         for misp_connection, args in misp_connections:
             # Search for query
-            r = query_misp(misp_connection, query, ['domain', 'domain|ip', 'hostname', 'hostname|port'])
+            r = query_misp(misp_connection, args, query, ['domain', 'domain|ip', 'hostname', 'hostname|port'])
 
             query_events, encountered_events = build_misp_events(
                 r,
@@ -97,6 +97,7 @@ def enrich_logs(logs, misp_connections, is_minified):
                 if answer['rdatatype'] == 'A' or answer['rdatatype'] == 'AAAA':
                     r = query_misp(
                         misp_connection,
+                        args,
                         answer['rdata'],
                         [
                             'domain',

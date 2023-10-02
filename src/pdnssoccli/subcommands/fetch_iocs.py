@@ -88,14 +88,15 @@ def fetch_iocs(ctx,
                     ips_attributes_new.append(attribute.value)
                 case 'ip-src|port' | 'ip-dst|port':
                     ip_val, _ = attribute.value.split("|")
-
                     # Check if value in warninglist:
                     ips_to_validate.add(ip_val)
 
         # Validate ip|port attributes against warninglists
         warn_matches = misp.values_in_warninglist(list(ips_to_validate))
-        res = [i for i in list(ips_to_validate) if i not in warn_matches.keys()]
-        ips_attributes_new.extend(res)
+
+        if warn_matches:
+            res = [i for i in list(ips_to_validate) if i not in warn_matches.keys()]
+            ips_attributes_new.extend(res)
 
     # Check if domain ioc files already exist
     domains_file_path = correlation_config['malicious_domains_file']
