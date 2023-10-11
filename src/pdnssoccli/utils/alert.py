@@ -32,14 +32,27 @@ def alerts_from_file(file_iter, start_date, end_date, client_hash):
             client_hash.setdefault(client_name, {})
             client_hash[client_name].setdefault(client_ip, {})
 
+            client_hash[client_name][client_ip].setdefault(match['query'], {'first_occurence': timestamp, 'events':{}, 'answers': set()})
+
             # Handle MISP events
             for event in match['correlation']['misp']['events']:
-                client_hash[client_name][client_ip].setdefault(event['ioc'], {'first_occurence': timestamp, 'events':{}})
 
-                client_hash[client_name][client_ip][event['ioc']]['events'][event['uuid']] = event
+                client_hash[client_name][client_ip][match['query']]['events'][event['uuid']] = event
 
-                if client_hash[client_name][client_ip][event['ioc']]['first_occurence'] > timestamp:
-                    client_hash[client_name][client_ip][event['ioc']]['first_occurence'] = timestamp
+                # Signify matching IOC
+
+                for answer in match['answers']:
+                        client_hash[client_name][client_ip][match['query']]['answers'].add(
+                            "{} ({})".format(
+                                answer['rdata'],
+                                answer['rdatatype']
+                            )
+                        )
+
+                #client_hash[client_name][client_ip][event['ioc']]['query'].append("match['query']")
+
+                if client_hash[client_name][client_ip][match['query']]['first_occurence'] > timestamp:
+                    client_hash[client_name][client_ip][match['query']]['first_occurence'] = timestamp
 
     return client_hash
 

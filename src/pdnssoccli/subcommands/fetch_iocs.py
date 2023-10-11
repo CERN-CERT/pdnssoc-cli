@@ -1,4 +1,5 @@
 import click
+from datetime import timedelta, datetime
 import logging
 from pymisp import PyMISP
 from pathlib import Path
@@ -44,7 +45,7 @@ def fetch_iocs(ctx,
     for misp_conf in ctx.obj['CONFIG']["misp_servers"]:
         misp = PyMISP(misp_conf['domain'], misp_conf['api_key'], True, debug=False)
         if misp:
-            misp_connections.append((misp, misp_conf['args']))
+            misp_connections.append((misp, misp_conf['args'], misp_conf['periods']['tags']))
 
     domain_attributes_old = []
     domain_attributes_new = []
@@ -53,10 +54,52 @@ def fetch_iocs(ctx,
 
 
     # Get new attributes
-    for misp, args in misp_connections:
+    for misp, args, tag_periods in misp_connections:
         ips_to_validate = set()
 
-        attributes = misp.search(
+        attributes = []
+
+        # Keep configured tag names to exclude them from catch all
+        configured_tags = []
+
+        for tag in tag_periods:
+            configured_tags.extend(tag['names'])
+
+            if tag['delta']:
+                misp_timestamp = datetime.now() - timedelta(**tag['delta'])
+            else:
+                misp_timestamp=None
+
+
+            tag_attributes = misp.search(
+                controller='attributes',
+                type_attribute=[
+                    'domain',
+                    'domain|ip',
+                    'hostname',
+                    'hostname|port',
+                    'ip-src',
+                    'ip-src|port',
+                    'ip-dst',
+                    'ip-dst|port',
+                ],
+                to_ids=1,
+                pythonify=True,
+                tags=tag['names'],
+                timestamp=misp_timestamp,
+                **args
+            )
+
+            attributes.extend(tag_attributes)
+
+        # Fetch catch all
+
+        if misp_conf['periods']['generic']['delta']:
+            misp_timestamp = datetime.now() - timedelta(**misp_conf['periods']['generic']['delta'])
+        else:
+            misp_timestamp=None
+
+        catch_all_attributes = misp.search(
             controller='attributes',
             type_attribute=[
                 'domain',
@@ -70,8 +113,13 @@ def fetch_iocs(ctx,
             ],
             to_ids=1,
             pythonify=True,
+            tags=["!" + tag for tag in configured_tags],
+            timestamp=misp_timestamp,
             **args
         )
+
+        attributes.extend(catch_all_attributes)
+
         for attribute in attributes:
             # Put to bucket according to attribute type
             match attribute.type:

@@ -9,6 +9,7 @@ ipaddress = "*"
 schedule = "*"
 pytz = "*"
 jinja2 = "*"
+pymisp = "*"
 
 [dev-packages]
 keyring = "*"
