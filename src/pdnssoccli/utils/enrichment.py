@@ -4,49 +4,54 @@ import logging
 
 logger = logging.getLogger("pdnssoccli")
 
-@cached(cache={}, key=lambda misp_connection, value, types: hashkey(misp_connection.root_url, value, tuple(types)))
-def query_misp(misp_connection, value, types):
+@cached(cache={}, key=lambda misp_connection, args, value, types: hashkey(misp_connection.root_url, value, tuple(types)))
+def query_misp(misp_connection, args, value, types):
     r = misp_connection.search(
+        controller="attributes",
         value=value,
         include_context=True,
         type_attribute=types,
         include_correlations=False,
         pythonify=True,
-        debug=False
+        debug=False,
+        to_ids=True,
+        include_event_tags=True,
+        **args
     )
 
     return r
 
 def build_misp_events(misp_response, misp_connection, encountered_events, query):
     misp_events = []
-    for event in misp_response:
+
+    for attribute in misp_response:
+        event = attribute.Event
         if not event.uuid in encountered_events:
-            for attribute in event.Attribute:
-                if attribute.value == query:
-                    # Fetch tags
-                    tags = []
-                    for tag in attribute.tags:
-                        tags.append(
-                            {
-                                "colour": tag.colour,
-                                "name": tag.name
-                            }
-                        )
-                    misp_events.append(
-                        {
-                            'uuid': event.uuid,
-                            'info': event.info,
-                            'id': event.id,
-                            'server': misp_connection.root_url,
-                            'event_url': "{}/events/view/{}".format(misp_connection.root_url, event.id),
-                            'num_iocs': event.attribute_count,
-                            'publication': event.date.strftime("%Y-%m-%d"),
-                            'organization': event.Orgc.name,
-                            'comment': attribute.comment,
-                            'tags': tags
-                        }
-                    )
-                    break
+            tags = []
+            for tag in attribute.tags:
+                tags.append(
+                    {
+                        "colour": tag.colour,
+                        "name": tag.name
+                    }
+                )
+
+            misp_events.append(
+                {
+                    'uuid': event.uuid,
+                    'info': event.info,
+                    'id': event.id,
+                    'server': misp_connection.root_url,
+                    'event_url': "{}/events/view/{}".format(misp_connection.root_url, event.id),
+                    #'num_iocs': event.attribute_count,
+                    'publication': event.date.strftime("%Y-%m-%d"),
+                    'organization': event.Orgc.name,
+                    'comment': attribute.comment,
+                    'tags': tags,
+                    'ioc': attribute.value,
+                    'ioc_type': attribute.type
+                }
+            )
 
             encountered_events.add(event.uuid)
 
@@ -76,7 +81,7 @@ def enrich_logs(logs, misp_connections, is_minified):
 
         for misp_connection, args in misp_connections:
             # Search for query
-            r = query_misp(misp_connection, query, ['domain'])
+            r = query_misp(misp_connection, args, query, ['domain', 'domain|ip', 'hostname', 'hostname|port'])
 
             query_events, encountered_events = build_misp_events(
                 r,
@@ -90,7 +95,21 @@ def enrich_logs(logs, misp_connections, is_minified):
             # Search for each answer
             for answer in answers:
                 if answer['rdatatype'] == 'A' or answer['rdatatype'] == 'AAAA':
-                    r = query_misp(misp_connection, answer['rdata'], ['domain', 'ip-src', 'ip-dst'])
+                    r = query_misp(
+                        misp_connection,
+                        args,
+                        answer['rdata'],
+                        [
+                            'domain',
+                            'domain|ip',
+                            'hostname',
+                            'hostname|port',
+                            'ip-src',
+                            'ip-src|port',
+                            'ip-dst',
+                            'ip-dst|port'
+                        ]
+                    )
 
                     answer_events, encountered_events = build_misp_events(
                         r,

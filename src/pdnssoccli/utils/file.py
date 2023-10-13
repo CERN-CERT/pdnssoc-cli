@@ -17,7 +17,7 @@ def read_generic(file_name):
     return f
 
 def read_file(file_path):
-    logging.info("Parsing {}".format(file_path.absolute()))
+    logging.debug("Parsing {}".format(file_path.absolute()))
 
     is_minified = False
     file_iter = None

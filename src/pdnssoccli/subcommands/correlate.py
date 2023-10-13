@@ -91,6 +91,7 @@ def correlate(ctx,
     **kwargs):
 
     correlation_config = ctx.obj['CONFIG']['correlation']
+    correlation_start_dt = datetime.now()
 
     retro_last_date = None
     if not kwargs.get('retro_lookup'):
@@ -108,9 +109,9 @@ def correlate(ctx,
                         break
                 else:
                     logger.warning("Last correlation file at {} not existing. Will be recreated".format(correlation_config['last_correlation_pointer_file']))
-                    start_date = datetime.now()
+                    start_date = correlation_start_dt
             else:
-                start_date = datetime.now()
+                start_date = correlation_start_dt
         else:
             start_date = kwargs.get('start_date')
 
@@ -200,7 +201,7 @@ def correlate(ctx,
 
     ip_attributes = list(set(ip_attributes))
 
-    logger.info("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes)))
+    logger.debug("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes)))
     total_matches = []
     total_matches_minified = []
 
@@ -217,23 +218,27 @@ def correlate(ctx,
             file_iter, is_minified =  pdnssoc_file_utils.read_file(file_path)
 
             if file_iter:
-                matches = pdnssoc_correlation_utils.correlate_file(
-                    file_iter,
-                    start_date,
-                    end_date,
-                    retro_last_date,
-                    set(domain_attributes),
-                    set(ip_attributes),
-                    domain_attributes_metadata,
-                    ip_attributes_metadata,
-                    is_minified
-                )
-                logger.info("Found {} matches in {}".format(len(matches), file_path.absolute()))
+                try:
+                    matches = pdnssoc_correlation_utils.correlate_file(
+                        file_iter,
+                        start_date,
+                        end_date,
+                        retro_last_date,
+                        set(domain_attributes),
+                        set(ip_attributes),
+                        domain_attributes_metadata,
+                        ip_attributes_metadata,
+                        is_minified
+                    )
+                    logger.info("Found {} matches in {}".format(len(matches), file_path.absolute()))
 
-                if is_minified:
-                    total_matches_minified.extend(matches)
-                else:
-                    total_matches.extend(matches)
+                    if is_minified:
+                        total_matches_minified.extend(matches)
+                    else:
+                        total_matches.extend(matches)
+                except:
+                    logger.error("Failed to parse {}, skipping".format(file))
+                    continue
 
             if kwargs.get('delete_on_success'):
                 file_path.unlink()
@@ -245,24 +250,28 @@ def correlate(ctx,
                     file_iter, is_minified =  pdnssoc_file_utils.read_file(nested_path)
 
                     if file_iter:
-                        matches = pdnssoc_correlation_utils.correlate_file(
-                            file_iter,
-                            start_date,
-                            end_date,
-                            retro_last_date,
-                            set(domain_attributes),
-                            set(ip_attributes),
-                            domain_attributes_metadata,
-                            ip_attributes_metadata,
-                            is_minified
-                        )
+                        try:
+                            matches = pdnssoc_correlation_utils.correlate_file(
+                                file_iter,
+                                start_date,
+                                end_date,
+                                retro_last_date,
+                                set(domain_attributes),
+                                set(ip_attributes),
+                                domain_attributes_metadata,
+                                ip_attributes_metadata,
+                                is_minified
+                            )
 
-                        logger.info("Found {} matches in {}".format(len(matches), nested_path.absolute()))
+                            logger.info("Found {} matches in {}".format(len(matches), nested_path.absolute()))
 
-                        if is_minified:
-                            total_matches_minified.extend(matches)
-                        else:
-                            total_matches.extend(matches)
+                            if is_minified:
+                                total_matches_minified.extend(matches)
+                            else:
+                                total_matches.extend(matches)
+                        except:
+                            logger.error("Failed to parse {}, skipping".format(nested_path))
+                            continue
 
             if kwargs.get('delete_on_success'):
                 shutil.rmtree(file)
@@ -282,15 +291,15 @@ def correlate(ctx,
             writer.write(document)
 
     if kwargs.get('retro_lookup'):
-        last_retro = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        last_retro = correlation_start_dt.strftime("%Y-%m-%dT%H:%M:%S")
         with pdnssoc_file_utils.write_generic(correlation_config['last_retro_pointer_file']) as fp:
             fp.write("{}\n".format(last_retro))
     else:
         # if new correlations, keep last timestamp
-        if to_output:
+        if total_matches+total_matches_minified:
             last_correlation = to_output[-1]['timestamp']
         else:
-            last_correlation = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            last_correlation = correlation_start_dt.strftime("%Y-%m-%dT%H:%M:%S")
 
         with pdnssoc_file_utils.write_generic(correlation_config['last_correlation_pointer_file']) as fp:
                 fp.write("{}\n".format(last_correlation))
