@@ -38,13 +38,10 @@ junit*.xml
 coverage.xml
 .pytest_cache/
 
-# Build and docs folder/files
+# Build folder/files
 build/*
 dist/*
 sdist/*
-docs/api/*
-docs/_rst/*
-docs/_build/*
 cover/*
 MANIFEST
 
