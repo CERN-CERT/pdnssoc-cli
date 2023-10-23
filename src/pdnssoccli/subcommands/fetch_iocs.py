@@ -43,7 +43,7 @@ def fetch_iocs(ctx,
     # Set up MISP connections
     misp_connections = []
     for misp_conf in ctx.obj['CONFIG']["misp_servers"]:
-        misp = PyMISP(misp_conf['domain'], misp_conf['api_key'], debug=False)
+        misp = PyMISP(misp_conf['domain'], misp_conf['api_key'], **misp_conf['conn_args'])
         if misp:
             misp_connections.append((misp, misp_conf['args'], misp_conf['periods']['tags']))
 
