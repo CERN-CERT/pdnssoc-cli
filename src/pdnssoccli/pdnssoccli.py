@@ -17,7 +17,8 @@ def configure(ctx, param, filename):
     try:
         with open(filename) as config_file:
             parsed_config = yaml.safe_load(config_file)
-    except:
+    except Exception as e:
+        print("Error:", e)
         parsed_config = {}
 
     ctx.default_map = parsed_config
