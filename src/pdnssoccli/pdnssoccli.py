@@ -27,7 +27,7 @@ def configure(ctx, param, filename):
 @click.option(
     '-c', '--config',
     type         = click.Path(dir_okay=False, file_okay=True),
-    default      = "/etc/pdnssoc-cli/config.yml",
+    default      = "/etc/pdnssoccli/pdnssoccli.yml",
     callback     = configure,
     is_eager     = True,
     expose_value = False,
