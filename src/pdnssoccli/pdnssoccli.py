@@ -17,8 +17,12 @@ def configure(ctx, param, filename):
     try:
         with open(filename) as config_file:
             parsed_config = yaml.safe_load(config_file)
+    except FileNotFoundError:
+        logger.error("Configuration file %s not found. Exiting...", filename)
+        exit(1)
     except:
-        parsed_config = {}
+        logger.error("Unexpected error while opening %s configuration file. Exiting...", filename)
+        exit(1)
 
     ctx.default_map = parsed_config
 
