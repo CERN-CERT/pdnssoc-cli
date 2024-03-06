@@ -122,39 +122,20 @@ def fetch_iocs(ctx,
 
         for attribute in attributes:
             # Put to bucket according to attribute type
-            match attribute.type:
-                case 'domain' | 'hostname':
-                    domain_attributes_new.append(attribute.value)
-                case 'domain|ip':
-                    domain_val, ip_val = attribute.value.split("|")
-                    domain_attributes_new.append(domain_val)
-                    ips_attributes_new.append(ip_val)
-                case 'hostname|port':
-                    hostname_val, _ = attribute.value.split("|")
-                    domain_attributes_new.append(hostname_val)
-                case 'ip-src' | 'ip-dst':
-                    ips_attributes_new.append(attribute.value)
-                case 'ip-src|port' | 'ip-dst|port':
-                    ip_val, _ = attribute.value.split("|")
-                    # Check if value in warninglist:
-                    ips_to_validate.add(ip_val)
-
-#  The above for loop with a match case was rewritten so that it is compatible with Python 3.9
-#        for attribute in attributes:
-#            if attribute.type == 'domain' or attribute.type == 'hostname':
-#                domain_attributes_new.append(attribute.value)
-#            elif attribute.type == 'domain|ip':
-#                domain_val, ip_val = attribute.value.split("|")
-#                domain_attributes_new.append(domain_val)
-#                ips_attributes_new.append(ip_val)
-#            elif attribute.type == 'hostname|port':
-#                hostname_val, _ = attribute.value.split("|")
-#                domain_attributes_new.append(hostname_val)
-#            elif attribute.type == 'ip-src' or attribute.type == 'ip-dst':
-#                ips_attributes_new.append(attribute.value)
-#            elif attribute.type == 'ip-src|port' or attribute.type == 'ip-dst|port':
-#                ip_val, _ = attribute.value.split("|")
-#                ips_to_validate.add(ip_val)        
+            if attribute.type == 'domain' or attribute.type == 'hostname':
+                domain_attributes_new.append(attribute.value)
+            elif attribute.type == 'domain|ip':
+                domain_val, ip_val = attribute.value.split("|")
+                domain_attributes_new.append(domain_val)
+                ips_attributes_new.append(ip_val)
+            elif attribute.type == 'hostname|port':
+                hostname_val, _ = attribute.value.split("|")
+                domain_attributes_new.append(hostname_val)
+            elif attribute.type == 'ip-src' or attribute.type == 'ip-dst':
+                ips_attributes_new.append(attribute.value)
+            elif attribute.type == 'ip-src|port' or attribute.type == 'ip-dst|port':
+                ip_val, _ = attribute.value.split("|")
+                ips_to_validate.add(ip_val)
 
         # Validate ip|port attributes against warninglists
         warn_matches = misp.values_in_warninglist(list(ips_to_validate))
