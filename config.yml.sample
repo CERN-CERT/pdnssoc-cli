@@ -14,6 +14,7 @@ misp_servers:
   - domain: "https://example-misp-instance.com"
     api_key: "API_KEY"
     verify_ssl: False
+    debug: False
 
     # PyMISP.search() arguments. For complete list of options
     # consult https://pymisp.readthedocs.io/en/latest/modules.html#pymisp.PyMISP.search
