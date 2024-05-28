@@ -91,7 +91,7 @@ def correlate(ctx,
     **kwargs):
 
     correlation_config = ctx.obj['CONFIG']['correlation']
-    correlation_start_dt = datetime.now()
+    correlation_start_dt = datetime.utcnow()
 
     retro_last_date = None
     if not kwargs.get('retro_lookup'):
@@ -116,7 +116,7 @@ def correlate(ctx,
             start_date = kwargs.get('start_date')
 
         if not kwargs.get('end_date'):
-            end_date = datetime.now()
+            end_date = datetime.utcnow()
         else:
             end_date = kwargs.get('end_date')
 
