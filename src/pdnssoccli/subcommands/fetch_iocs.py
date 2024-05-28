@@ -66,7 +66,7 @@ def fetch_iocs(ctx,
             configured_tags.extend(tag['names'])
 
             if tag['delta']:
-                misp_timestamp = datetime.now() - timedelta(**tag['delta'])
+                misp_timestamp = datetime.utcnow() - timedelta(**tag['delta'])
             else:
                 misp_timestamp=None
 
@@ -95,7 +95,7 @@ def fetch_iocs(ctx,
         # Fetch catch all
 
         if misp_conf['periods']['generic']['delta']:
-            misp_timestamp = datetime.now() - timedelta(**misp_conf['periods']['generic']['delta'])
+            misp_timestamp = datetime.utcnow() - timedelta(**misp_conf['periods']['generic']['delta'])
         else:
             misp_timestamp=None
 
