@@ -48,7 +48,7 @@ def alert(ctx,
 
     alerting_config = ctx.obj['CONFIG']['alerting']
     correlation_config = ctx.obj['CONFIG']['correlation']
-    alerting_start_dt = datetime.now()
+    alerting_start_dt = datetime.utcnow()
 
     # iterate through alert configs enabled
     for alert_type, alert_conf in ctx.obj['CONFIG']['alerting'].items():
@@ -71,7 +71,7 @@ def alert(ctx,
         start_date = kwargs.get('start_date')
 
     if not kwargs.get('end_date'):
-        end_date = datetime.now()
+        end_date = datetime.utcnow()
     else:
         end_date = kwargs.get('end_date')
 
