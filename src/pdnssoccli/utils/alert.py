@@ -102,7 +102,7 @@ def email_alerts(alerts, config, summary = False):
     else:
         # Group emails per destination in email.mappings
         for sensor, sensor_data in alerts.items():
-            if config['mappings']:
+            if 'mappings' in config and config['mappings']:
                for mapping in config['mappings']:
                    if mapping['client_id'] == sensor:
                        email_body = email_template.render(alerts={sensor:sensor_data})
