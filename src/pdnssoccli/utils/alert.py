@@ -102,22 +102,23 @@ def email_alerts(alerts, config, summary = False):
     else:
         # Group emails per destination in email.mappings
         for sensor, sensor_data in alerts.items():
-            if sensor in config['mappings']:
-                email_body = email_template.render(alerts={sensor:sensor_data})
-                msg_root = MIMEMultipart('related')
-                msg_root['Subject'] = str(config["subject"])
-                msg_root['From'] = config["from"]
-                msg_root['To'] = config["mappings"][sensor]['contact']
-                msg_root['Reply-To'] = config["from"]
-                msg_root.preamble = 'This is a multi-part message in MIME format.'
-                msg_alternative = MIMEMultipart('alternative')
-                msg_root.attach(msg_alternative)
-                msg_text = MIMEText(str(email_body), 'html', 'utf-8')
-                msg_alternative.attach(msg_text)
-
-                outgoing_mailbox.append(msg_root)
-            else:
-                logger.warning("Sensor {} not configured for email alerting".format(sensor))
+            if config['mappings']:
+               for mapping in config['mappings']:
+                   if mapping['client_id'] == sensor:
+                       email_body = email_template.render(alerts={sensor:sensor_data})
+                       msg_root = MIMEMultipart('related')
+                       msg_root['Subject'] = str(config["subject"])
+                       msg_root['From'] = config["from"]
+                       msg_root['To'] = mapping['contact']
+                       msg_root['Reply-To'] = config["from"]
+                       msg_root.preamble = 'This is a multi-part message in MIME format.'
+                       msg_alternative = MIMEMultipart('alternative')
+                       msg_root.attach(msg_alternative)
+                       msg_text = MIMEText(str(email_body), 'html', 'utf-8')
+                       msg_alternative.attach(msg_text)
+                       outgoing_mailbox.append(msg_root)
+               else:
+                   logger.warning("Sensor {} not configured for email alerting".format(sensor))
 
 
 
