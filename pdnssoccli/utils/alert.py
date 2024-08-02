@@ -106,8 +106,8 @@ def slack_alerts(alerts, config, alerts_database, alerts_database_max_size):
     for match in alerts:
 
         # First, make sure we are not about to create a duplicate alert
-
-        alert_pattern  = sha256_hash(match['client_name'] + match['query'] + match['timestamp'][:-1][:16])
+        # ['timestamp'][:-1][:11] means we truncate to the date. Not ideal...
+        alert_pattern  = sha256_hash(match['client_name'] + match['query'] + match['timestamp'][:-1][:11])
 
         if if_alert_exists(alerts_database, alert_pattern):
             logger.debug("Redundant alert, stopping: {}".format(alert_pattern))
